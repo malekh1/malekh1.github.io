@@ -1,0 +1,29 @@
+<!doctype html><script>
+window.__routeA={startedAt:new Date().toISOString(),stopped:false,handshakes:0,githubExtractorRequestSeen:false,maskingUpdates:[],ruleSummaries:[],other:[]};
+(function(){
+ const IPC="__pbx_ipc_41ae53b9",MAX=20;
+ const add=(a,o)=>{a.push(o);if(a.length>MAX)a.shift();};
+ function sr(r){if(!r||typeof r!=="object")return null;const a=r.appScope&&typeof r.appScope==="object"?r.appScope:null;return{directiveType:r.directiveType,effect:r.directive?.properties?.effect,enabled:r.directive?.properties?.enabled,monitor:r.monitor,priority:r.priority,accountConditionsPresent:!!(a&&Array.isArray(a.accountConditions)&&a.accountConditions.length),accountConditionCount:a&&Array.isArray(a.accountConditions)?a.accountConditions.length:0,contentScopePresent:!!r.contentScope};}
+ function walk(v,p="",d=0){if(d>5||!v||typeof v!=="object")return;if(Array.isArray(v)){const rs=v.map(sr).filter(x=>x&&x.directiveType);if(rs.length)add(window.__routeA.ruleSummaries,{time:new Date().toISOString(),path:p,rules:rs});return;}for(const [k,val] of Object.entries(v)){const q=p?p+"."+k:k;if(val&&typeof val==="object")walk(val,q,d+1);}}
+ function onIPC(e){const d=e.detail;if(!d||typeof d!=="object")return;if(d.__content_bridge_connect===true){window.__routeA.handshakes++;return;}if(d.type==="MaskingPolicyUpdate"){add(window.__routeA.maskingUpdates,{time:new Date().toISOString(),enabled:d.enabled,tabIdType:typeof d.tabId,numericTabId:Number.isInteger(d.tabId)&&d.tabId>0,tabId:Number.isInteger(d.tabId)&&d.tabId>0?d.tabId:String(d.tabId),urlChainLength:Array.isArray(d.urlChain)?d.urlChain.length:null});return;}walk(d,"IPC");}
+ function onMsg(e){if(e.source!==window)return;const m=e.data;if(!m||typeof m!=="object")return;if(m.type==="SCRIPT_BRIDGE_REQUEST_MESSAGE"&&m.payload?.type==="GITHUB_TENANT_EXTRACTOR"){window.__routeA.githubExtractorRequestSeen=true;add(window.__routeA.other,{time:new Date().toISOString(),type:m.type,payloadType:m.payload?.type,executionIdPresent:typeof m.executionId==="string"});return;}const t=String(m.type||"").toLowerCase();if(t.includes("rules")||t.includes("policy")||t.includes("mask"))walk(m,"window.message");}
+ document.addEventListener(IPC,onIPC,true);window.addEventListener("message",onMsg,true);
+ setTimeout(()=>{document.removeEventListener(IPC,onIPC,true);window.removeEventListener("message",onMsg,true);window.__routeA.stopped=true;},45000);
+})();
+</script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PABX Route-A Passive Prerequisite Observer</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;max-width:900px;margin:36px auto;padding:0 18px;line-height:1.45}
+.card{border:1px solid #999;border-radius:12px;padding:16px;margin:14px 0}
+pre{white-space:pre-wrap;word-break:break-word;border:1px solid #aaa;border-radius:8px;padding:12px;max-height:55vh;overflow:auto}
+button{font:inherit;padding:10px 13px;border-radius:8px}
+</style>
+<h1>PABX Route-A Passive Prerequisite Observer</h1>
+<div class="card"><p>Passive only. No tenant forgery, no PABX RPC requests, no policy changes, no tab-ID enumeration, and no debugger/CDP calls.</p><p>Auto-arms before body parsing and stops after 45 seconds.</p></div>
+<div class="card"><h2>Assessment</h2><pre id="assessment">Starting...</pre><button id="download">Download result JSON</button></div>
+<div class="card"><h2>Bounded evidence</h2><pre id="out">Waiting...</pre></div>
+<script>
+function assess(){const x=window.__routeA,numeric=[...x.maskingUpdates].reverse().find(v=>v.numericTabId),enabled=[...x.maskingUpdates].reverse().find(v=>v.enabled===true),maskingRules=[];for(const b of x.ruleSummaries)for(const r of b.rules||[]){if(String(r.directiveType||"").toLowerCase().includes("mask"))maskingRules.push(r);}const lines=["GitHub extractor request naturally seen: "+x.githubExtractorRequestSeen,"Masking updates observed: "+x.maskingUpdates.length,"Enabled masking update observed: "+!!enabled,"Numeric tabId naturally disclosed: "+!!numeric,"Page-visible masking-looking rules found: "+maskingRules.length,"Capture stopped: "+x.stopped];if(numeric){lines.push("","PASSIVE ROUTE-A TAB-ID PREREQUISITE SATISFIED:","A numeric tabId was naturally present in MaskingPolicyUpdate.","No privileged action was attempted.");}else if(x.stopped){lines.push("","No natural numeric tabId was observed in this 45-second window.");}document.getElementById("assessment").textContent=lines.join("\n");document.getElementById("out").textContent=JSON.stringify(x,null,2);if(!x.stopped)setTimeout(assess,750);}assess();
+document.getElementById("download").onclick=()=>{const blob=new Blob([JSON.stringify(window.__routeA,null,2)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="pabx_routeA_passive_prerequisites.json";a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+</script>
